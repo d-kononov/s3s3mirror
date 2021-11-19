@@ -86,11 +86,11 @@ public class MirrorMain {
         } else if (options.hasAwsKeys()) {
             client = new AmazonS3Client(options, clientConfiguration);
         } else if (options.isUseIamRole()) {
-            InstanceProfileCredentialsProvider instanceProfileClient = new InstanceProfileCredentialsProvider();
-            if (instanceProfileClient.getCredentials() != null) {
+            WebIdentityTokenCredentialsProvider webIdentityClient = WebIdentityTokenCredentialsProvider.create();
+            if (webIdentityClient.getCredentials() == null) {
                 client = new AmazonS3Client(new InstanceProfileCredentialsProvider(), clientConfiguration);
             } else {
-                client = new AmazonS3Client(WebIdentityTokenCredentialsProvider.create(), clientConfiguration);
+                client = new AmazonS3Client(webIdentityClient, clientConfiguration);
             }
         } else {
             throw new IllegalStateException("No authenication method available, please specify IAM Role usage or AWS key and secret");
