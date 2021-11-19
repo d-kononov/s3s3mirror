@@ -5,6 +5,7 @@ import com.amazonaws.Protocol;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.auth.WebIdentityTokenCredentialsProvider;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Owner;
 import lombok.Cleanup;
@@ -85,7 +86,12 @@ public class MirrorMain {
         } else if (options.hasAwsKeys()) {
             client = new AmazonS3Client(options, clientConfiguration);
         } else if (options.isUseIamRole()) {
-            client = new AmazonS3Client(new InstanceProfileCredentialsProvider(), clientConfiguration);
+            InstanceProfileCredentialsProvider instanceProfileClient = new InstanceProfileCredentialsProvider();
+            if (instanceProfileClient.getCredentials() != null) {
+                client = new AmazonS3Client(new InstanceProfileCredentialsProvider(), clientConfiguration);
+            } else {
+                client = new AmazonS3Client(WebIdentityTokenCredentialsProvider.create(), clientConfiguration);
+            }
         } else {
             throw new IllegalStateException("No authenication method available, please specify IAM Role usage or AWS key and secret");
         }        
@@ -110,7 +116,8 @@ public class MirrorMain {
             }
         } else {
             InstanceProfileCredentialsProvider client = new InstanceProfileCredentialsProvider();
-            if (client.getCredentials() == null) {
+            WebIdentityTokenCredentialsProvider webIdentityClient = WebIdentityTokenCredentialsProvider.create();
+            if (client.getCredentials() == null && webIdentityClient.getCredentials() == null) {
                 throw new IllegalStateException("Could not find IAM Instance Profile credentials from the AWS metadata service.");
             }
         }
